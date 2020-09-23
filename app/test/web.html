@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+    <head>
+        <style>
+            pre {
+                margin: 0;
+            }
+            #divChatPage {
+                display: none;
+            }
+            #divChat {
+                max-width: 500px;
+                border: 1px solid black;
+                padding: 3px;
+                outline: none !important;
+            }
+            #divChatBar {
+                position: fixed;
+                bottom: 0;
+                border-top: 1px solid #afafaf;
+                width: 100%;
+                height: 50px;
+                left: 0;
+            }
+            #txtSend {
+                width: 100%;
+                height: 100%;
+                border: 0;
+                outline: none !important;
+            }
+            .chat-msg-div {
+                margin-bottom: 3px;
+            }
+            .chat-msg {
+                display: inline-block;
+                background-color: #99ff99;
+                border-radius: 5px;
+                padding: 5px;
+            }
+            .chat-msg.right {
+                background-color: #39c0ff;
+            }
+            div.right {
+                text-align: right;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="divLogin">
+            USERNAME: <br>
+            <input type="text" id="txtUsername">user1/user2<br>
+            PASSWORD: <br>
+            <input type="password" id="txtPassword">tigase<br>
+            <br>
+            <input type="button" id="btnLogin" value="login" />
+        </div>
+
+        <div id="divChatPage">
+            <div id="divChat"></div>
+            <div id="divChatBar">
+                <textarea id="txtSend" rows="1" cols="100"></textarea>
+            </div>
+        </div>
+    </body>
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js" 
+        integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" 
+        crossorigin="anonymous"></script> 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.1.0/socket.io.slim.js"></script>
+    <script>
+        $(function() {
+            var socket;
+            var txtChat = $('#txtChat');
+            var txtSend = $('#txtSend');
+
+            txtSend.keypress(event => {
+                if ((event.which || event.keyCode) === 13 && !event.shiftKey) {
+                    event.preventDefault();
+                    sendMessage();
+                }
+            });
+
+            $('#btnLogin').click(e => {
+                var username = $('#txtUsername').val();
+                var password = $('#txtPassword').val();
+
+                $.ajax({
+                    type: 'POST',
+                    url: 'http://localhost:5001/web/login',
+                    contentType: "application/json; charset=utf-8",
+                    dataType: 'text',
+                    data: JSON.stringify({
+                        username: username,
+                        password: password
+                    })
+                }).done((result, status, h) => {
+                    let data = JSON.parse(result);
+                    socket = io(`http://localhost:5001/?access_token=${data.token}`);
+                    socket.emit('setuser', username);
+                    socket.on('message', function(msg) {
+                        addChatMessage(msg, true);
+                    });
+                    $('#divLogin').hide();
+                    $('#divChatPage').show();
+                }).catch((e, x, h) => {
+                    console.log(e);
+                });
+            });
+            
+            function sendMessage() {
+                var text = txtSend.val();
+                if (text) {
+                    addChatMessage(text);
+                    socket.emit('message', text);
+                    txtSend.val('');
+                }
+            }
+
+            function addChatMessage(text, right) {
+                var htmlText = text.replace('\\n', '<br>');
+                var cls = right ? 'right' : '';
+                $(`<div class="chat-msg-div ${cls}"><div class="chat-msg ${cls}">${htmlText}</div></div>`).appendTo(divChat);
+            }
+        });
+    </script>
+</html>

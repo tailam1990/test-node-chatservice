@@ -1,0 +1,4 @@
+node_modules/*
+googleapp_credentials.json
+.env
+.vscode
